@@ -1,4 +1,3 @@
-
 #!/bin/bash
 #SBATCH --job-name=probe_pipeline
 #SBATCH --mail-type=END,FAIL
