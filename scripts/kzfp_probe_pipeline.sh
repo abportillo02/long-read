@@ -3,7 +3,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=abportillo@coh.org
 #SBATCH --output=/home/abportillo/github_repo/long-read/kzfp_tequila/pipeline.out
-#SBATCH --error="/home/abportillo/github_repo/long-read/kzfp_tequila/pipeline.err
+#SBATCH --error=/home/abportillo/github_repo/long-read/kzfp_tequila/pipeline.err
 #SBATCH -n 16
 #SBATCH -N 1
 #SBATCH -p all
