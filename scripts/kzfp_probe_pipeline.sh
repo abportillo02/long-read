@@ -74,7 +74,7 @@ bedtools getfasta \
     -bed $OUTDIR/kzfp_exons_numbered.bed \
     -name \
 > $OUTDIR/kzfp_exons.fa
-EOF
+
 
 echo "DONE!"
 echo "Output directory: $OUTDIR"
