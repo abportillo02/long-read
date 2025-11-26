@@ -37,8 +37,9 @@ awk 'BEGIN{OFS="\t"} {
     gene=a[1]
     print $1, $4-1, $5, gene, ".", $7
 }' \
-| sort -k4,4 -k1,1 -k2,2n \
+| sort -k1,1 -k2,2n \
 > $OUTDIR/kzfp_exons_raw.bed
+
 
 echo "Merging exons per gene..."
 
