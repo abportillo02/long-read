@@ -11,7 +11,7 @@
 #SBATCH --time=48:00:00
 
 # Activate conda environment (no bashrc sourcing)
-source /home/abportillo/.conda/etc/profile.d/conda.sh
+source /home/abportillo/.bashrc
 conda activate /home/abportillo/.conda/envs/mamba_abner_BC
 
 ### INPUTS
