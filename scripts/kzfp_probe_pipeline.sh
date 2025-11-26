@@ -61,7 +61,7 @@ BEGIN {OFS="\t"}
   else { exon++ }
   print $1, $2, $3, $4"_exon"exon, ".", "+"
   prev_gene = $4
-}' \ $OUTDIR/kzfp_exons_merged.bed \
+}' $OUTDIR/kzfp_exons_merged.bed \
 > $OUTDIR/kzfp_exons_numbered.bed
 
 echo "Extracting exon FASTA..."
