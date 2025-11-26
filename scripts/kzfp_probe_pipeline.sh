@@ -14,68 +14,88 @@ source /home/abportillo/.bashrc
 conda activate /home/abportillo/.conda/envs/mamba_abner_BC
 set -euo pipefail
 
-### INPUTS ###
+### INPUTS 
 GTF="/home/abportillo/github_repo/long-read/docs/gencode.v43.annotation.gtf"
 FASTA="/home/abportillo/github_repo/long-read/docs/hg38_p14.fa"
-KZFP_LIST="/home/abportillo/github_repo/long-read/docs/kzfp_trono_list_fixed.csv"
+KZFP_LIST="/home/abportillo/github_repo/long-read/docs/kzfp_trono_list_fixed.csv"   # one gene symbol per line
 
-### OUTPUT DIR ###
+### OUTPUT DIR 
 OUTDIR="/home/abportillo/github_repo/long-read/kzfp_tequila"
 mkdir -p $OUTDIR
 
-echo "Extracting exon entries from GTF..."
+echo "STEP 1: Extract canonical transcript IDs..."
 
-# STEP 1: Extract exons for the KZFP genes
-awk '$3=="exon"' $GTF | \
-grep -F -f $KZFP_LIST | \
-awk 'BEGIN{OFS="\t"} {
-    match($0, /gene_name "([^"]+)"/, a)
-    gene=a[1]
+# Canonical transcript prioritization:
+# MANE_Select > appris_principal > Ensembl_canonical
+grep -F -f $KZFP_LIST $GTF | \
+awk '
+  $3=="transcript" && (
+      $0 ~ /MANE_Select/ || 
+      $0 ~ /appris_principal/ || 
+      $0 ~ /Ensembl_canonical/
+  ) {
+      match($0, /transcript_id "([^"]+)"/, a)
+      print a[1]
+}' \
+| sort -u \
+> $OUTDIR/kzfp_canonical_transcripts.txt
+
+echo "STEP 1 ✓  Canonical transcript list written."
+
+echo "STEP 2: Extract canonical exons only..."
+
+grep -F -f $OUTDIR/kzfp_canonical_transcripts.txt $GTF | \
+awk '$3=="exon"' \
+> $OUTDIR/kzfp_canonical_exons.gtf
+
+echo "STEP 2 ✓  Extracted canonical exons."
+
+echo "STEP 3: Convert exon GTF → BED..."
+
+awk '
+BEGIN {OFS="\t"}
+{
+    match($0, /gene_name "([^"]+)"/, g)
+    gene=g[1]
     print $1, $4-1, $5, gene, ".", $7
-}' | sort -k4,4 -k1,1 -k2,2n \
+}' \
+$OUTDIR/kzfp_canonical_exons.gtf \
+| sort -k1,1 -k2,2n -k3,3n \
 > $OUTDIR/kzfp_exons_raw.bed
 
-echo "Merging exons PER GENE..."
+echo "STEP 3 ✓  BED file created."
 
-# STEP 2: Merge exons for each gene separately
-# Prevents multiple KZFP names from appearing in one row
-awk '{
-  print > ("'"$OUTDIR"'/tmp_"$4".bed")
-}' $OUTDIR/kzfp_exons_raw.bed
+echo "STEP 4: Assign exon numbers per gene..."
 
-# Merge each gene independently
-for f in $OUTDIR/tmp_*.bed; do
-    gene=$(basename $f | sed 's/tmp_//' | sed 's/.bed//')
-
-    bedtools merge \
-        -i $f \
-        | awk -v g=$gene 'BEGIN{OFS="\t"} {print $1, $2, $3, g}'
-done | sort -k4,4 -k1,1 -k2,2n \
-> $OUTDIR/kzfp_exons_merged.bed
-
-rm $OUTDIR/tmp_*.bed
-
-echo "Adding exon numbers..."
-
-# STEP 3: Add exon numbers
 awk '
 BEGIN {OFS="\t"}
 {
   if ($4 != prev_gene) { exon = 1 }
   else { exon++ }
-  print $1, $2, $3, $4"_exon"exon, ".", "+"
+
+  print $1, $2, $3, $4"_exon"exon, ".", $6
   prev_gene = $4
-}' $OUTDIR/kzfp_exons_merged.bed \
+}' \
+$OUTDIR/kzfp_exons_raw.bed \
 > $OUTDIR/kzfp_exons_numbered.bed
 
-echo "Extracting exon FASTA..."
+echo "STEP 4 ✓  Exon numbering complete."
 
-# STEP 4: Extract sequences
+echo "STEP 5: Extract exon sequences to FASTA..."
+
 bedtools getfasta \
-    -fi $FASTA \
-    -bed $OUTDIR/kzfp_exons_numbered.bed \
-    -name \
+  -fi $FASTA \
+  -bed $OUTDIR/kzfp_exons_numbered.bed \
+  -name \
 > $OUTDIR/kzfp_exons.fa
 
-echo "DONE!"
+echo "STEP 5 ✓  FASTA extraction complete."
+
+echo "ALL DONE!"
 echo "Output directory: $OUTDIR"
+echo "Files generated:"
+echo " - kzfp_canonical_transcripts.txt"
+echo " - kzfp_canonical_exons.gtf"
+echo " - kzfp_exons_raw.bed"
+echo " - kzfp_exons_numbered.bed"
+echo " - kzfp_exons.fa"
