@@ -3,8 +3,8 @@ import csv
 import math
 import sys
 
-INPUT_FASTA = sys.argv[1]
-OUTPUT_CSV = sys.argv[2]
+INPUT_FASTA = sys.argv[1] # "/home/abportillo/github_repo/long-read/kzfp_tequila/kzfp_exons.fa"
+OUTPUT_CSV = sys.argv[2] # "/home/abportillo/github_repo/long-read/kzfp_tequila/kzfp_tequila_probes.csv"
 
 PROBE_LEN = 120
 UNIVERSAL_PRIMER = "CGAAGAGCCCTATAGTGAGTCGTATTAGAA"
