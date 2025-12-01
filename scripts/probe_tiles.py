@@ -66,17 +66,4 @@ with open(OUTPUT_CSV, "w", newline="") as f:
 
 print(f"Done! Wrote {len(output_rows)} probes to {OUTPUT_CSV}")
 
-# Write excel 
-
-df =pd.DataFrame(output_rows, columns= [
-    "Probe name",
-    "Probe sequence (120 nt)",
-    "Nt.BspQI sequence (30 nt)",
-    "Twist oligo sequence (150 nt)"
-])
-
-df.to_excel(OUPUT_XLSX, index=False)
-print(f"Wrote excel: {OUPUT_XLSX}")
-
-print(f"Done! Total probes wrtitten: {len(output_rows)}")
 
