@@ -2,9 +2,11 @@ from Bio import SeqIO
 import csv
 import math
 import sys
+import pandas as pd
 
 INPUT_FASTA = sys.argv[1] # "/home/abportillo/github_repo/long-read/kzfp_tequila/kzfp_exons.fa"
 OUTPUT_CSV = sys.argv[2] # "/home/abportillo/github_repo/long-read/kzfp_tequila/kzfp_tequila_probes.csv"
+OUPUT_XLSX = OUTPUT_CSV.replace(".csv", ".xlsx")
 
 PROBE_LEN = 120
 UNIVERSAL_PRIMER = "CGAAGAGCCCTATAGTGAGTCGTATTAGAA"
@@ -52,14 +54,29 @@ for record in records:
 # Write output CSV
 
 with open(OUTPUT_CSV, "w", newline="") as f:
-    writer = csv.writer(f, delimiter=",")
+    writer = csv.writer(f)
     writer.writerow([
         "Probe name",
         "Probe sequence (120 nt)",
         "Nt.BspQI sequence (30 nt)",
         "Twist oligo sequence (150 nt)"
     ])
-    writer.writerow(output_rows)
+    for row in output_rows:
+        writer.writerow(row)
 
 print(f"Done! Wrote {len(output_rows)} probes to {OUTPUT_CSV}")
+
+# Write excel 
+
+df =pd.DataFrame(output_rows, columns= [
+    "Probe name",
+    "Probe sequence (120 nt)",
+    "Nt.BspQI sequence (30 nt)",
+    "Twist oligo sequence (150 nt)"
+])
+
+df.to_excel(OUPUT_XLSX, index=False)
+print(f"Wrote excel: {OUPUT_XLSX}")
+
+print(f"Done! Total probes wrtitten: {len(output_rows)}")
 
