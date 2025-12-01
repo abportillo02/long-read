@@ -28,7 +28,7 @@ awk '
 BEGIN {
     while ((getline < "'"$KZFP_LIST"'") > 0) genes[$1]=1
 }
-$3=="transcript" && ($0 ~ /MANE_Select/ || $0 ~ /appris_principal/ || $0 ~ /Ensembl_canonical/) {
+$3=="transcript" && ($0 ~ /MANE_Select/ {
     match($0, /gene_name "([^"]+)"/, g)
     match($0, /transcript_id "([^"]+)"/, t)
     if (genes[g[1]]) print t[1]
