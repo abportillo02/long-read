@@ -2,7 +2,7 @@
 #SBATCH --job-name=probe_tiling
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=abportillo@coh.org
-#SBATCH --output=/home/abportillo/github_repo/long-read/kzfp_tequila/probe_tiling.err
+#SBATCH --output=/home/abportillo/github_repo/long-read/kzfp_tequila/probe_tiling.out
 #SBATCH --error=/home/abportillo/github_repo/long-read/kzfp_tequila/probe_tiling.err
 #SBATCH --cpus-per-task=16
 #SBATCH --nodes=1
