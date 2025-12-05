@@ -135,3 +135,11 @@ fi
 
 # Remove the temporary files
 rm -r "$temp_dir"
+
+### Format to run Inputs (5 arguments):
+
+# annotation_file — A GTF file (e.g., gene/transcript/exon annotations). Gnecode annotation file 
+# genome_file — A genome FASTA (e.g., hg38.fa). Fasta file download 
+# gene_ID_list — A plain text file, one gene ID per line (IDs must appear in the GTF lines). KZFP_list 
+# output_fasta — Path to write extracted sequences. 
+# feature_type — One of: gene, transcript, exon, master. either gene or master 
