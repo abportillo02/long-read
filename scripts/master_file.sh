@@ -5,6 +5,10 @@
 
 # This script generates gene-based, master-transcript-based, transcript-based, or exon-based FASTA files from a GTF annotation file and a genome FASTA file.
 
+source /home/abportillo/.bashrc
+conda activate /home/abportillo/.conda/envs/mamba_abner_BC
+
+
 # Usage check
 if [[ $# -ne 5 ]]; then
     echo "Usage: $0 <annotation_file> <genome_file> <gene_ID_list> <output_FASTA> <feature_type>"
