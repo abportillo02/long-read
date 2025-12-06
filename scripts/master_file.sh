@@ -29,8 +29,8 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
-# === Minimal change 1: Build gene_name patterns (skip CSV header) ===
-# If your list is plain text with NO header, replace NR>1 with NR>=1 and drop the sed.
+# Build gene_name patterns from CSV (column 1 = symbol), skip header, strip spaces/CRs
+# If your list is plain text with NO header (one symbol per line), replace NR>1 with NR>=1 and drop sed.
 awk -F',' 'NR>1 {sym=$1; gsub(/^[ \t]+|[ \t]+$/, "", sym); print "gene_name \""sym"\""}' "$gene_id_list" \
   | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
 
@@ -40,19 +40,17 @@ if [[ "$feature_type" == "gene" ]]; then
 
     # Filter the GTF file for lines with specified gene names and feature type "gene"
     grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
-    echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
-    echo "Filtered rows: $(wc -l < "$temp_dir/filtered.gtf")"
+    echo "Filtered rows (gene): $(wc -l < "$temp_dir/filtered.gtf")"
 
     if [[ $(wc -l < "$temp_dir/filtered.gtf") -eq 0 ]]; then
-        echo "No gene features matched your gene symbols. Check CSV column and header."
-        rm -r "$temp_dir"
-        exit 2
+        echo "No 'gene' features matched your gene symbols. Check CSV column/header or symbols."
+        rm -r "$temp_dir"; exit 2
     fi
 
-    # Convert filtered GTF data to BED
+    # Convert filtered GTF data to BED via gtf2bed (your original approach)
     gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
     bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
-    echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
+    echo "BED rows (gene): $(wc -l < "$temp_dir/temp.sorted.bed")"
 
     # Extract sequences
     bedtools getfasta -fi "$genome_file" -bed "$temp_dir/temp.sorted.bed" -name -s -fo "$output_fasta"
@@ -62,43 +60,51 @@ if [[ "$feature_type" == "gene" ]]; then
 elif [[ "$feature_type" == "master" ]]; then
     echo "Filtering for master transcript features."
 
-    # === Minimal change 2a: use gene_name patterns for exon filtering ===
+    # Use gene_name patterns for exon filtering (minimal change to your original line)
     grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "exon"' > "$temp_dir/filtered.gtf"
-    echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
+    echo "Filtered rows (exon): $(wc -l < "$temp_dir/filtered.gtf")"
 
-    # Convert filtered GTF data to BED
-    gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
-    bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
-    echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
+    if [[ $(wc -l < "$temp_dir/filtered.gtf") -eq 0 ]]; then
+        echo "No 'exon' features matched your gene symbols. Check CSV column/header or symbols."
+        rm -r "$temp_dir"; exit 2
+    fi
 
-    # Merge overlapping exons with gene ID information
+    # MINIMAL BUT CRITICAL CHANGE: Build BED6 with gene_name in col4 and strand in col6
+    # (avoid gtf2bed variations and guarantee col4 exists for -c 4 merge)
+    awk 'BEGIN{OFS="\t"}
+        $3=="exon"{
+            match($0, /gene_name "([^"]+)"/, gn)
+            if (gn[1] != "") print $1, $4 - 1, $5, gn[1], ".", $7
+        }
+    ' "$temp_dir/filtered.gtf" | bedtools sort -i - > "$temp_dir/temp.sorted.bed"
+    echo "BED rows (exon BED for master): $(wc -l < "$temp_dir/temp.sorted.bed")"
+
+    # Merge overlapping exons with gene name information (col4 is present now)
     bedtools merge -i "$temp_dir/temp.sorted.bed" -c 4 -o distinct | sort -k1,1 -k2,2n > "$temp_dir/temp.merged.bed"
-    echo "Overlapping exons merged."
+    echo "Merged rows: $(wc -l < "$temp_dir/temp.merged.bed")"
 
     # Iterate through unique geneIDs in the merged bed file and extract sequences
     temp_gene_bed="$temp_dir/temp.merged.singlegene.bed"
     awk '{print $4}' "$temp_dir/temp.merged.bed" | sort -u | while read -r geneID; do
         # extract all regions for the current gene ID into the temporary bed file
         awk -v gene="$geneID" '$4 == gene' "$temp_dir/temp.merged.bed" > "$temp_gene_bed"
+        [[ ! -s "$temp_gene_bed" ]] && echo "No merged intervals for $geneID" && continue
         # echo a single header line containing the gene ID to the output fasta file
         echo ">$geneID" >> "$output_fasta"
-        # === Minimal change 2b: remove -fo to allow piping ===
+        # remove -fo to allow piping; concatenate exon blocks into one sequence per gene
         bedtools getfasta -fi "$genome_file" -bed "$temp_gene_bed" | grep -v "^>" | tr -d '\n ' >> "$output_fasta"
-        # move to a new line
         echo >> "$output_fasta"
         echo "Sequences obtained for $geneID"
     done
-    echo "Sequences have been extracted and saved to $output_fasta."
+    echo "Master sequences have been extracted and saved to $output_fasta."
 
 # If feature type is "transcript"
 elif [[ "$feature_type" == "transcript" ]]; then
     echo "Filtering for transcript features."
 
-    # Filter the GTF file for lines with specified gene IDs and feature type "exon"
     grep -Ff "$gene_id_list" "$annotation_file" | awk '$3 == "exon"' > "$temp_dir/filtered.gtf"
     echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
 
-    # Convert filtered GTF data to BED with transcript IDs
     awk 'BEGIN {OFS="\t"}
         $3 == "exon" {
             match($0, /transcript_id "([^"]+)"/, t)
@@ -108,12 +114,11 @@ elif [[ "$feature_type" == "transcript" ]]; then
         }' "$temp_dir/filtered.gtf" | sort -k1,1 -k2,2n > "$temp_dir/temp.sorted.bed"
     echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
 
-    # Iterate through unique transcript ID in the bed file and extract sequences
     temp_transcript_bed="$temp_dir/temp.transcript.bed"
     awk '{print $4}' "$temp_dir/temp.sorted.bed" | sort -u | while read -r transcriptID; do
         awk -v transcript="$transcriptID" '$4 == transcript' "$temp_dir/temp.sorted.bed" > "$temp_transcript_bed"
         echo ">$transcriptID" >> "$output_fasta"
-        bedtools getfasta -fi "$genome_file" -bed "$temp_transcript_bed" -fo | grep -v "^>" | tr -d '\n ' >> "$output_fasta"
+        bedtools getfasta -fi "$genome_file" -bed "$temp_transcript_bed" | grep -v "^>" | tr -d '\n ' >> "$output_fasta"
         echo >> "$output_fasta"
         echo "Sequences obtained for $transcriptID"
     done
@@ -123,16 +128,13 @@ elif [[ "$feature_type" == "transcript" ]]; then
 elif [[ "$feature_type" == "exon" ]]; then
     echo "Filtering for exon features."
 
-    # Filter the GTF file for lines with specified gene IDs and feature type "exon"
     grep -Ff "$gene_id_list" "$annotation_file" | awk '$3 == "exon"' > "$temp_dir/filtered.gtf"
     echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
 
-    # Convert filtered GTF data to BED
     gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
     bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
     echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
 
-    # Extract sequences and remove duplicates
     bedtools getfasta -fi "$genome_file" -bed "$temp_dir/temp.sorted.bed" -name -s -fo "$temp_dir/temp.sorted.fasta"
     seqkit rmdup -s "$temp_dir/temp.sorted.fasta" -o "$output_fasta"
     echo "Sequences have been extracted and saved to $output_fasta."
