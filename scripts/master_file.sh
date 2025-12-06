@@ -33,12 +33,16 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
+
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
     echo "Filtering for gene features."
 
-    # Filter the GTF file for lines with specified gene IDs and feature type "gene"
-    grep -Ff "$gene_id_list" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
+    # Build a temporary pattern file for gene_name attributes
+    awk '{print "gene_name \""$0"\""}' "$gene_id_list" > "$temp_dir/gene_name_patterns.txt"
+
+    # Filter the GTF file for lines with specified gene names and feature type "gene"
+    grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
     echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
     
     # Convert filtered GTF data to BED
