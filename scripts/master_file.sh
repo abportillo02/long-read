@@ -38,8 +38,9 @@ echo "Using temporary directory: $temp_dir"
 if [[ "$feature_type" == "gene" ]]; then
     echo "Filtering for gene features."
 
-    # Build a temporary pattern file for gene_name attributes
-    awk '{print "gene_name \""$0"\""}' "$gene_id_list" > "$temp_dir/gene_name_patterns.txt"
+    # Build gene_name patterns from CSV (col 1 = symbol), skip header, strip spaces/CRs
+    awk -F',' 'NR>1 {gsub(/^[ \t]+|[ \t]+$/, "", $1); print "gene_name \""$1"\""}' "$gene_id_list" \
+      | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
 
     # Filter the GTF file for lines with specified gene names and feature type "gene"
     grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
