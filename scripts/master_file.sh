@@ -143,3 +143,8 @@ rm -r "$temp_dir"
 # gene_ID_list — A plain text file, one gene ID per line (IDs must appear in the GTF lines). KZFP_list 
 # output_fasta — Path to write extracted sequences. 
 # feature_type — One of: gene, transcript, exon, master. either gene or master 
+
+
+# bash your_script.sh annotation.gtf hg38.fa gene_ids.txt output.fasta gene
+
+#bash master_file.sh /home/abportillo/genomes/hg38/gencode.v43.annotation.gtf /home/abportillo/genomes/hg38/hg38_p14.fa /home/abportillo/github_repo/long-read/docs/kzfp_trono_list_fixed.csv /home/abportillo/github_repo/long-read/kzfp_tequila/probes_hg38.fasta gene
