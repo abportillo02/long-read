@@ -58,7 +58,23 @@ if [[ "$feature_type" == "gene" ]]; then
 
     # Convert filtered GTF data to BED via gtf2bed (your original approach)
     gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
-    bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
+
+    # Map gene_id -> gene_name from the filtered GTF
+    awk -F'\t' '
+    $3 == "gene" {
+        if (match($9, /gene_id "([^"]+)"/, gi) && match($9, /gene_name "([^"]+)"/, gn)) {
+        print gi[1] "\t" gn[1]
+        }
+    }
+    ' "$temp_dir/filtered.gtf" | sort -u > "$temp_dir/geneid_to_genename.tsv"
+
+    # Replace BED column 4 (name) from gene_id -> gene_name
+    awk 'BEGIN{FS=OFS="\t"}
+        FNR==NR { m[$1]=$2; next }
+        { if ($4 in m) $4=m[$4]; print }
+    ' "$temp_dir/geneid_to_genename.tsv" "$temp_dir/temp.bed" > "$temp_dir/temp.named.bed"
+ 
+    bedtools sort -i "$temp_dir/temp.named.bed" > "$temp_dir/temp.sorted.bed"
     echo "BED rows (gene): $(wc -l < "$temp_dir/temp.sorted.bed")"
 
     # Extract sequences
