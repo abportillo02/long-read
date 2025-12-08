@@ -13,11 +13,11 @@ if [[ $# -ne 5 ]]; then
 fi
 
 # Assign input arguments
-annotation_file="$1"
-genome_file="$2"
-gene_id_list="$3"
-output_fasta="$4"
-feature_type="$5"
+annotation_file="$1" # /home/abportillo/github_repo/long-read/docs/gencode.v43.annotation.gtf
+genome_file="$2" # /home/abportillo/github_repo/long-read/docs/hg38_p14.fa
+gene_id_list="$3" # /home/abportillo/github_repo/long-read/docs/primate_kzfp_protein_coding_matches_exact.txt
+output_fasta="$4" # /home/abportillo/github_repo/long-read/docs/primate_kzfp_probes.fasta
+feature_type="$5" # gene
 
 # Validate feature type
 if [[ "$feature_type" != "gene" && "$feature_type" != "transcript" && "$feature_type" != "exon" && "$feature_type" != "master" ]]; then
@@ -29,10 +29,34 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
-# Build gene_name patterns from CSV (column 1 = symbol), skip header, strip spaces/CRs
-# If your list is plain text with NO header (one symbol per line), replace NR>1 with NR>=1 and drop sed.
-awk -F',' 'NR>1 {sym=$1; gsub(/^[ \t]+|[ \t]+$/, "", sym); print "gene_name \""sym"\""}' "$gene_id_list" \
-  | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
+
+# Build gene_name patterns from gene list (supports CSV w/ header or TXT one-per-line)
+gene_name_patterns="$temp_dir/gene_name_patterns.txt"
+
+# Detect commas to decide CSV vs TXT
+if grep -q ',' "$gene_id_list"; then
+  # CSV: use column 1; skip header if present; trim; handle CRLF
+  tr -d '\r' < "$gene_id_list" \
+    | awk -F',' '
+        NR==1 {
+          # If first field looks like a header (alphabetic/underscore/space), skip it
+          if ($1 ~ /^[A-Za-z_ ]+$/) next
+        }
+        {
+          sym=$1
+          gsub(/^[ \t]+|[ \t]+$/, "", sym)
+          if (sym != "") print "gene_name \"" sym "\""
+        }
+      ' > "$gene_name_patterns"
+else
+  # TXT: one symbol per line; trim; handle CRLF
+  tr -d '\r' < "$gene_id_list" \
+    | awk '
+        { sym=$0; gsub(/^[ \t]+|[ \t]+$/, "", sym) }
+        sym != "" { print "gene_name \"" sym "\""}
+      ' > "$gene_name_patterns"
+fi
+
 
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
