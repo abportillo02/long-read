@@ -29,23 +29,32 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
+# Build gene_name patterns from CSV (column 1 = symbol), skip header, strip spaces/CRs
+# If your list is plain text with NO header (one symbol per line), replace NR>1 with NR>=1 and drop sed.
+awk -F',' 'NR>1 {sym=$1; gsub(/^[ \t]+|[ \t]+$/, "", sym); print "gene_name \""sym"\""}' "$gene_id_list" \
+  | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
+
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
-    echo "Filtering for gene features."
+    echo "Filtering for gene features (by gene_name from CSV column 1)."
 
-    # Filter the GTF file for lines with specified gene IDs and feature type "gene"
-    grep -Ff "$gene_id_list" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
-    echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
-    
-    # Convert filtered GTF data to BED
+    # Filter the GTF file for lines with specified gene names and feature type "gene"
+    grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
+    echo "Filtered rows (gene): $(wc -l < "$temp_dir/filtered.gtf")"
+
+    if [[ $(wc -l < "$temp_dir/filtered.gtf") -eq 0 ]]; then
+        echo "No 'gene' features matched your gene symbols. Check CSV column/header or symbols."
+        rm -r "$temp_dir"; exit 2
+    fi
+
+    # Convert filtered GTF data to BED via gtf2bed (your original approach)
     gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
     bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
-    echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
+    echo "BED rows (gene): $(wc -l < "$temp_dir/temp.sorted.bed")"
 
     # Extract sequences
     bedtools getfasta -fi "$genome_file" -bed "$temp_dir/temp.sorted.bed" -name -s -fo "$output_fasta"
     echo "Sequences have been extracted and saved to $output_fasta."
-
 
 # If feature type is "master"
 elif [[ "$feature_type" == "master" ]]; then
