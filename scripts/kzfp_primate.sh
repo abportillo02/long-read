@@ -3,7 +3,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=abportillo@coh.org
 #SBATCH --output=/home/abportillo/github_repo/long-read/docs/primate_list.out
-#SBATCH --error=/home/abportillo/github_repo/long-read/docs/primate_list .err
+#SBATCH --error=/home/abportillo/github_repo/long-read/docs/primate_list.err
 #SBATCH --cpus-per-task=16
 #SBATCH --nodes=1
 #SBATCH --partition=all
