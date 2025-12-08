@@ -45,7 +45,7 @@ tr -d '\r' < "$gene_id_list" \
 
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
-    echo "Filtering for gene features (by gene_name from CSV column 1)."
+    echo "Filtering for gene features."
 
     # Filter the GTF file for lines with specified gene names and feature type "gene"
     grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
