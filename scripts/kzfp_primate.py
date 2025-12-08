@@ -28,10 +28,10 @@ primate_pc = primate_df[primate_df["classification"] == "protein_coding"].copy()
 
 #Verify against full list
 primate_set = set(primate_pc["assigned_gene"].dropna())
-all_set = set(all_df["gene_synbol"].dropna())
+all_set = set(all_df["gene_symbol"].dropna())
 matches = sorted(primate_set & all_set)
 missing_in_all = sorted(primate_set - all_set)
 
 # output
 pd.DataFrame({"symbol": matches}).to_csv("/home/abportillo/github_repo/long-read/docs/primate_kzfp_protein_coding_matches_exact.txt", index=False, header=False)
-pd.DataFrame({'synbol': missing_in_all}).to_csv("/home/abportillo/github_repo/long-read/docs/primate_kzfp_protein_coding_missing_in_full_exact.txt", index=False, header=False)
+pd.DataFrame({'symbol': missing_in_all}).to_csv("/home/abportillo/github_repo/long-read/docs/primate_kzfp_protein_coding_missing_in_full_exact.txt", index=False, header=False)
