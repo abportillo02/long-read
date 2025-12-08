@@ -29,10 +29,19 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
-# Build gene_name patterns from CSV (column 1 = symbol), skip header, strip spaces/CRs
-# If your list is plain text with NO header (one symbol per line), replace NR>1 with NR>=1 and drop sed.
-awk -F',' 'NR>1 {sym=$1; gsub(/^[ \t]+|[ \t]+$/, "", sym); print "gene_name \""sym"\""}' "$gene_id_list" \
-  | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
+# # Build gene_name patterns from CSV (column 1 = symbol), skip header, strip spaces/CRs
+# # If your list is plain text with NO header (one symbol per line), replace NR>1 with NR>=1 and drop sed.
+# awk -F',' 'NR>1 {sym=$1; gsub(/^[ \t]+|[ \t]+$/, "", sym); print "gene_name \""sym"\""}' "$gene_id_list" \
+#   | sed 's/\r$//' > "$temp_dir/gene_name_patterns.txt"
+
+
+# For TXT input: one symbol per line, trim spaces and CRLF
+tr -d '\r' < "$gene_id_list" \
+  | awk '
+      { sym=$0; gsub(/^[ \t]+|[ \t]+$/, "", sym) }
+      sym != "" { print "gene_name \"" sym "\""}
+    ' > "$temp_dir/gene_name_patterns.txt"
+
 
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
