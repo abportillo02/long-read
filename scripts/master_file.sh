@@ -29,56 +29,23 @@ fi
 temp_dir=$(mktemp -d)
 echo "Using temporary directory: $temp_dir"
 
-
-# Build gene_name patterns from gene list (supports CSV w/ header or TXT one-per-line)
-gene_name_patterns="$temp_dir/gene_name_patterns.txt"
-
-# Detect commas to decide CSV vs TXT
-if grep -q ',' "$gene_id_list"; then
-  # CSV: use column 1; skip header if present; trim; handle CRLF
-  tr -d '\r' < "$gene_id_list" \
-    | awk -F',' '
-        NR==1 {
-          # If first field looks like a header (alphabetic/underscore/space), skip it
-          if ($1 ~ /^[A-Za-z_ ]+$/) next
-        }
-        {
-          sym=$1
-          gsub(/^[ \t]+|[ \t]+$/, "", sym)
-          if (sym != "") print "gene_name \"" sym "\""
-        }
-      ' > "$gene_name_patterns"
-else
-  # TXT: one symbol per line; trim; handle CRLF
-  tr -d '\r' < "$gene_id_list" \
-    | awk '
-        { sym=$0; gsub(/^[ \t]+|[ \t]+$/, "", sym) }
-        sym != "" { print "gene_name \"" sym "\""}
-      ' > "$gene_name_patterns"
-fi
-
-
 # If feature type is "gene"
 if [[ "$feature_type" == "gene" ]]; then
-    echo "Filtering for gene features (by gene_name from CSV column 1)."
+    echo "Filtering for gene features."
 
-    # Filter the GTF file for lines with specified gene names and feature type "gene"
-    grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
-    echo "Filtered rows (gene): $(wc -l < "$temp_dir/filtered.gtf")"
-
-    if [[ $(wc -l < "$temp_dir/filtered.gtf") -eq 0 ]]; then
-        echo "No 'gene' features matched your gene symbols. Check CSV column/header or symbols."
-        rm -r "$temp_dir"; exit 2
-    fi
-
-    # Convert filtered GTF data to BED via gtf2bed (your original approach)
+    # Filter the GTF file for lines with specified gene IDs and feature type "gene"
+    grep -Ff "$gene_id_list" "$annotation_file" | awk '$3 == "gene"' > "$temp_dir/filtered.gtf"
+    echo "Filtered GTF data saved to $temp_dir/filtered.gtf"
+    
+    # Convert filtered GTF data to BED
     gtf2bed < "$temp_dir/filtered.gtf" > "$temp_dir/temp.bed"
     bedtools sort -i "$temp_dir/temp.bed" > "$temp_dir/temp.sorted.bed"
-    echo "BED rows (gene): $(wc -l < "$temp_dir/temp.sorted.bed")"
+    echo "Sorted BED saved to $temp_dir/temp.sorted.bed"
 
     # Extract sequences
     bedtools getfasta -fi "$genome_file" -bed "$temp_dir/temp.sorted.bed" -name -s -fo "$output_fasta"
     echo "Sequences have been extracted and saved to $output_fasta."
+
 
 # If feature type is "master"
 elif [[ "$feature_type" == "master" ]]; then
