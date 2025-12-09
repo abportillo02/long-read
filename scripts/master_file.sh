@@ -103,6 +103,13 @@ elif [[ "$feature_type" == "master" ]]; then
     ' "$temp_dir/filtered.gtf" | bedtools sort -i - > "$temp_dir/temp.sorted.bed"
     echo "BED rows (exon BED for master): $(wc -l < "$temp_dir/temp.sorted.bed")"
 
+
+    comm -23 \
+  <(awk -F',' 'NR>1{g=$1; gsub(/^[ \t]+|[ \t]+$/, "", g); print g}' "$gene_id_list" | sed 's/\r$//' | LC_ALL=C sort -u) \
+  <(awk '{print $4}' "$temp_dir/temp.sorted.bed" | sed 's/\r$//' | LC_ALL=C sort -u) \
+  | head -n 10 > "$(dirname "$output_fasta")/missing_genes.txt"
+
+
     # >>> MINIMAL CHANGE: derive gene list from temp.sorted.bed (avoids combo labels like ZFP30,ZNF540)
     awk '{print $4}' "$temp_dir/temp.sorted.bed" | sort -u > "$temp_dir/gene_list.unique.txt"
 
