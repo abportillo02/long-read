@@ -81,11 +81,11 @@ if [[ "$feature_type" == "gene" ]]; then
     bedtools getfasta -fi "$genome_file" -bed "$temp_dir/temp.sorted.bed" -name -s -fo "$output_fasta"
     echo "Sequences have been extracted and saved to $output_fasta."
 
-# If feature type is "master"
+
 elif [[ "$feature_type" == "master" ]]; then
     echo "Filtering for master transcript features."
 
-    # Use gene_name patterns for exon filtering (minimal change to your original line)
+    # Use gene_name patterns for exon filtering
     grep -Ff "$temp_dir/gene_name_patterns.txt" "$annotation_file" | awk '$3 == "exon"' > "$temp_dir/filtered.gtf"
     echo "Filtered rows (exon): $(wc -l < "$temp_dir/filtered.gtf")"
 
@@ -94,8 +94,7 @@ elif [[ "$feature_type" == "master" ]]; then
         rm -r "$temp_dir"; exit 2
     fi
 
-    # MINIMAL BUT CRITICAL CHANGE: Build BED6 with gene_name in col4 and strand in col6
-    # (avoid gtf2bed variations and guarantee col4 exists for -c 4 merge)
+    # Build BED6 with gene_name in col4 and strand in col6
     awk 'BEGIN{OFS="\t"}
         $3=="exon"{
             match($0, /gene_name "([^"]+)"/, gn)
@@ -104,24 +103,48 @@ elif [[ "$feature_type" == "master" ]]; then
     ' "$temp_dir/filtered.gtf" | bedtools sort -i - > "$temp_dir/temp.sorted.bed"
     echo "BED rows (exon BED for master): $(wc -l < "$temp_dir/temp.sorted.bed")"
 
-    # Merge overlapping exons with gene name information (col4 is present now)
-    bedtools merge -i "$temp_dir/temp.sorted.bed" -c 4 -o distinct | sort -k1,1 -k2,2n > "$temp_dir/temp.merged.bed"
-    echo "Merged rows: $(wc -l < "$temp_dir/temp.merged.bed")"
+    # >>> MINIMAL CHANGE: derive gene list from temp.sorted.bed (avoids combo labels like ZFP30,ZNF540)
+    awk '{print $4}' "$temp_dir/temp.sorted.bed" | sort -u > "$temp_dir/gene_list.unique.txt"
 
-    # Iterate through unique geneIDs in the merged bed file and extract sequences
-    temp_gene_bed="$temp_dir/temp.merged.singlegene.bed"
-    awk '{print $4}' "$temp_dir/temp.merged.bed" | sort -u | while read -r geneID; do
-        # extract all regions for the current gene ID into the temporary bed file
-        awk -v gene="$geneID" '$4 == gene' "$temp_dir/temp.merged.bed" > "$temp_gene_bed"
-        [[ ! -s "$temp_gene_bed" ]] && echo "No merged intervals for $geneID" && continue
-        # echo a single header line containing the gene ID to the output fasta file
+    temp_gene_bed="$temp_dir/temp.gene.bed"
+    : > "$output_fasta"
+
+    # Iterate per gene; subset, merge within gene, and extract in transcription order
+    while read -r geneID; do
+        [[ -z "$geneID" ]] && continue
+
+        # Subset only this gene from the pre-sorted BED6
+        awk -v gene="$geneID" 'BEGIN{OFS="\t"} $4==gene {print $0}' "$temp_dir/temp.sorted.bed" > "$temp_gene_bed"
+        [[ ! -s "$temp_gene_bed" ]] && echo "No exon intervals for $geneID" && continue
+
+        # Capture strand (assumes consistent strand per gene; typical for protein-coding)
+        strand=$(awk 'NR==1{print $6}' "$temp_gene_bed")
+
+        # Merge within gene (strand-aware)
+        bedtools merge -s -i "$temp_gene_bed" > "$temp_dir/${geneID}.merged.bed"
+
+        # Order merged intervals by transcription direction
+        if [[ "$strand" == "-" ]]; then
+            sort -k1,1 -k2,2nr "$temp_dir/${geneID}.merged.bed" > "$temp_dir/${geneID}.ordered.bed3"
+        else
+            sort -k1,1 -k2,2n  "$temp_dir/${geneID}.merged.bed" > "$temp_dir/${geneID}.ordered.bed3"
+        fi
+
+        # Convert BED3 back to BED6 for strand-aware getfasta
+        awk -v g="$geneID" -v s="$strand" 'BEGIN{OFS="\t"} {print $1,$2,$3,g,".",s}' \
+            "$temp_dir/${geneID}.ordered.bed3" > "$temp_dir/${geneID}.ordered.bed6"
+
+        # Write FASTA header and concatenated sequence (reverse-complement applied if '-' strand)
         echo ">$geneID" >> "$output_fasta"
-        # remove -fo to allow piping; concatenate exon blocks into one sequence per gene
-        bedtools getfasta -fi "$genome_file" -bed "$temp_gene_bed" | grep -v "^>" | tr -d '\n ' >> "$output_fasta"
+        bedtools getfasta -fi "$genome_file" -bed "$temp_dir/${geneID}.ordered.bed6" -s \
+            | grep -v "^>" | tr -d '\n ' >> "$output_fasta"
         echo >> "$output_fasta"
+
         echo "Sequences obtained for $geneID"
-    done
+    done < "$temp_dir/gene_list.unique.txt"
+
     echo "Master sequences have been extracted and saved to $output_fasta."
+
 
 # If feature type is "transcript"
 elif [[ "$feature_type" == "transcript" ]]; then
