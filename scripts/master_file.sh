@@ -15,9 +15,9 @@ fi
 # Assign input arguments
 annotation_file="$1" # /home/abportillo/github_repo/long-read/docs/gencode.v43.annotation.gtf
 genome_file="$2" # /home/abportillo/github_repo/long-read/docs/hg38_p14.fa
-gene_id_list="$3" # /home/abportillo/github_repo/long-read/docs/primate_kzfp_protein_coding_matches_exact.txt
+gene_id_list="$3" # /home/abportillo/github_repo/long-read/docs/priority_kzfps_ordered.txt
 output_fasta="$4" # /home/abportillo/github_repo/long-read/docs/primate_kzfp_probes.fasta
-feature_type="$5" # gene
+feature_type="$5" # master
 
 # Validate feature type
 if [[ "$feature_type" != "gene" && "$feature_type" != "transcript" && "$feature_type" != "exon" && "$feature_type" != "master" ]]; then
