@@ -4,7 +4,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-output_path = "/mnt/user-data/outputs/KZFP_AMPure_Size_Selection_Protocol.pdf"
+output_path = "/home/abportillo/github_repo/long-read/scripts/KZFP_AMPure_Size_Selection_Protocol.pdf"
 doc = SimpleDocTemplate(output_path, pagesize=letter,
                         leftMargin=0.75*inch, rightMargin=0.75*inch,
                         topMargin=0.75*inch, bottomMargin=0.75*inch)
