@@ -1,11 +1,21 @@
 #!/bin/bash
+#SBATCH --job-name=kzfp_analysis
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=abportillo@coh.org
+#SBATCH --output=/home/abportillo/github_repo/long-read/docs/kzfp_analysis.out
+#SBATCH --error=/home/abportillo/github_repo/long-read/docs/kzfp_analysis.err
+#SBATCH --cpus-per-task=16
+#SBATCH --nodes=1
+#SBATCH --partition=all
+#SBATCH --mem=150G
+#SBATCH --time=48:00:00
 
 # Configuration
 FASTQ_DIR="/home/abportillo/github_repo/long-read/data"
 FASTQ_LIST="/home/abportillo/github_repo/long-read/scripts/fastq_list.txt"
 REFERENCE="/home/abportillo/genomes/hg38/hg38_p14.fa"
 ANNOTATION="/home/abportillo/genomes/hg38/gencode.v43.annotation.gtf"
-BASE_OUTPUT_DIR="results"
+BASE_OUTPUT_DIR="/home/abportillo/github_repo/long-read/results"
 
 # Loop through each fastq file in the list
 while IFS= read -r fastq_file; do
