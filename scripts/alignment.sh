@@ -5,7 +5,7 @@ FASTQ_DIR="/home/abportillo/github_repo/long-read/data"
 FASTQ_LIST="/home/abportillo/github_repo/long-read/scripts/fastq_list.txt"
 REFERENCE="/home/abportillo/genomes/hg38/hg38_p14.fa"
 ANNOTATION="/home/abportillo/genomes/hg38/gencode.v43.annotation.gtf"
-BASE_OUTPUT_DIR="/home/abportillo/github_repo/long-read/results"
+BASE_OUTPUT_DIR="results"
 
 # Loop through each fastq file in the list
 while IFS= read -r fastq_file; do
