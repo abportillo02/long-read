@@ -12,28 +12,36 @@
 
 # Configuration
 FASTQ_DIR="/home/abportillo/github_repo/long-read/data"
-FASTQ_LIST="/home/abportillo/github_repo/long-read/scripts/fastq_list.txt"
 REFERENCE="/home/abportillo/genomes/hg38/hg38_p14.fa"
 ANNOTATION="/home/abportillo/genomes/hg38/gencode.v43.annotation.gtf"
 BASE_OUTPUT_DIR="/home/abportillo/github_repo/long-read/results"
 
-# Loop through each fastq file in the list
-while IFS= read -r fastq_file; do
-    # Skip empty lines
-    [[ -z "$fastq_file" ]] && continue
+# Pool ALL fastq files under data/ into one file (outside FASTQ_DIR so it
+# isn't picked up on re-runs). Handles both .fastq and .fastq.gz.
+POOLED_DIR="/home/abportillo/github_repo/long-read/pooled_fastq"
+POOLED="${POOLED_DIR}/MCF10A_pooled_pass.fastq"
+mkdir -p "$POOLED_DIR"
+> "$POOLED"   # start empty
 
-    # Create a unique output directory per sample (strip .fastq extension)
-    sample_name="${fastq_file%.fastq}"
-    output_dir="${BASE_OUTPUT_DIR}/${sample_name}"
+find "$FASTQ_DIR" -type f \( -name "*.fastq" -o -name "*.fastq.gz" \) | while read -r f; do
+    case "$f" in
+        *.gz) zcat "$f" >> "$POOLED" ;;
+        *)    cat  "$f" >> "$POOLED" ;;
+    esac
+done
 
-    echo "Processing: $fastq_file -> $output_dir"
+# Sanity check: how many reads did we pool?
+n_reads=$(( $(wc -l < "$POOLED") / 4 ))
+echo "Pooled $n_reads reads into $POOLED"
 
-    python /net/nfs-irwrsrchnas01/labs/dschones/bioresearch/dschones/KZFP_ISOFORM_ANALYSIS/KZFP_ISOFORM_PIPELINE/main.py \
-        --fastq "${FASTQ_DIR}/${fastq_file}" \
-        --reference "$REFERENCE" \
-        --annotation "$ANNOTATION" \
-        --output-dir "$output_dir"
+# Run the pipeline once on the pooled sample
+output_dir="${BASE_OUTPUT_DIR}/MCF10A_pooled"
+echo "Processing pooled sample -> $output_dir"
 
-done < "$FASTQ_LIST"
+python /net/nfs-irwrsrchnas01/labs/dschones/bioresearch/dschones/KZFP_ISOFORM_ANALYSIS/KZFP_ISOFORM_PIPELINE/main.py \
+    --fastq "$POOLED" \
+    --reference "$REFERENCE" \
+    --annotation "$ANNOTATION" \
+    --output-dir "$output_dir"
 
-echo "All samples processed."
+echo "Done."
