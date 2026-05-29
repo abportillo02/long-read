@@ -1,0 +1,12 @@
+#!/bin/sh
+
+#BATCH --job-name=transfer_test
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=abportillo@coh.org
+#SBATCH -N 1-1
+#SBATCH --ntasks=1
+#SBATCH --mem=75GB
+#SBATCH --time=48:00:00
+#SBATCH --output=transfer_%A_%a.log
+
+scp /home/abportillo/github_repo/long-read/data/ gemini-data1:/scratch/abportillo/long-read/data
