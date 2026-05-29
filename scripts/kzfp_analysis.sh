@@ -42,6 +42,7 @@ python /net/nfs-irwrsrchnas01/labs/dschones/bioresearch/dschones/KZFP_ISOFORM_AN
     --fastq "$POOLED" \
     --reference "$REFERENCE" \
     --annotation "$ANNOTATION" \
-    --output-dir "$output_dir"
+    --output-dir "$output_dir" \
+    -- min-mapq 0
 
 echo "Done."
