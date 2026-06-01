@@ -1,5 +1,4 @@
 #!/bin/sh
-
 #SBATCH --job-name=transfer_test
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=abportillo@coh.org
