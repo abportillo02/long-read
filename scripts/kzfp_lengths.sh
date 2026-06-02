@@ -1,4 +1,4 @@
-!/bin/sh
+#!/bin/sh
 #SBATCH --job-name=kzfp-lengths
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=abportillo@coh.org
