@@ -29,7 +29,7 @@ module load Dorado/0.7.1
 # --- Paths (EDIT) ---
 BASE=/scratch/abportillo/long-read
 POD5_DIR=$BASE/data/pod5                           
-MODEL="dna_r10.4.1_e8.2_400bps_sup@v5.0.0"
+MODEL=MODEL="/scratch/abportillo/long-read/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0"
 OUTDIR=$BASE/results/pilot_kzfp
 mkdir -p "$OUTDIR"
 
