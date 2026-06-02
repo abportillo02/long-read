@@ -22,8 +22,10 @@
 set -uo pipefail
 
 # --- Environment ---
-source /home/abportillo/.conda/etc/profile.d/conda.sh   # adjust if conda lives elsewhere
+set +u                                              # /etc/bashrc reads PS1, unset in batch jobs
+source /home/abportillo/.bashrc
 conda activate /home/abportillo/.conda/envs/mamba_abner_BC
+set -u
 
 THREADS=${SLURM_CPUS_PER_TASK:-16}
 
