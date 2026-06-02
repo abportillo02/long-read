@@ -22,8 +22,8 @@
 set -uo pipefail
 
 # --- Environment ---
-source /home/abportillo/.bashrc
-conda activate /home/abportillo/.conda/envs/mamba_abner_BC   # has samtools + minimap2
+source /home/abportillo/.conda/etc/profile.d/conda.sh   # adjust if conda lives elsewhere
+conda activate /home/abportillo/.conda/envs/mamba_abner_BC
 
 THREADS=${SLURM_CPUS_PER_TASK:-16}
 
