@@ -27,7 +27,7 @@ conda activate /home/abportillo/.conda/envs/mamba_abner_BC   # has samtools + mi
 
 THREADS=${SLURM_CPUS_PER_TASK:-16}
 
-# --- Paths (EDIT to match apollo) ---
+# --- Paths  ---
 BASE=/home/abportillo/github_repo/long-read
 GENOME=$BASE/docs/hg38_p14.fa
 GTF=$BASE/docs/gencode.v43.annotation.gtf
