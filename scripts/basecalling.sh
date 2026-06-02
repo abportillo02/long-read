@@ -29,7 +29,8 @@ module load Dorado/0.7.1
 # --- Paths (EDIT) ---
 BASE=/scratch/abportillo/long-read
 POD5_DIR=$BASE/data/pod5                           
-MODEL=MODEL="/scratch/abportillo/long-read/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0"
+MODEL="/scratch/abportillo/long-read/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0"
+ls "$MODEL/config.toml" || echo "Model config not found at $MODEL/config.toml"
 OUTDIR=$BASE/results/pilot_kzfp
 mkdir -p "$OUTDIR"
 
@@ -53,7 +54,7 @@ echo "[$(date)] POD5 dir: $POD5_DIR"
  
 # --- Basecalling ---
 echo "[$(date)] Basecalling on $(hostname)..."
-${DORADO:-dorado} basecaller \
+dorado basecaller \
     -x cuda:all \
     --recursive \
     --kit-name SQK-PCB114-24 \
