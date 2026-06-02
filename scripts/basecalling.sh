@@ -33,6 +33,25 @@ MODEL=MODEL="/scratch/abportillo/long-read/models/dna_r10.4.1_e8.2_400bps_sup@v5
 OUTDIR=$BASE/results/pilot_kzfp
 mkdir -p "$OUTDIR"
 
+# --- Pre-flight checks (fail fast with clear messages) ---
+if ! command -v dorado >/dev/null 2>&1; then
+    echo "ERROR: 'dorado' not on PATH. Did the module load? Try: module load Dorado/0.7.1" >&2
+    exit 1
+fi
+if [[ ! -f "$MODEL/config.toml" ]]; then
+    echo "ERROR: model config not found at $MODEL/config.toml" >&2
+    echo "       Re-download on a login node (has internet):" >&2
+    echo "       cd $BASE/models && dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0" >&2
+    exit 1
+fi
+if [[ ! -d "$POD5_DIR" ]] || [[ -z "$(find "$POD5_DIR" -name '*.pod5' -print -quit 2>/dev/null)" ]]; then
+    echo "ERROR: no .pod5 files found under $POD5_DIR" >&2
+    exit 1
+fi
+echo "[$(date)] Pre-flight OK. Model: $MODEL"
+echo "[$(date)] POD5 dir: $POD5_DIR"
+ 
+# --- Basecalling ---
 echo "[$(date)] Basecalling on $(hostname)..."
 ${DORADO:-dorado} basecaller \
     -x cuda:all \
