@@ -8,7 +8,7 @@
 #SBATCH --output=kzfp_basecall_%j.out
 #SBATCH --error=kzfp_basecall_%j.err
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=abportillo@coh.orgls
+#SBATCH --mail-user=abportillo@coh.org
 
 # =============================================================================
 # STEP 1 of 2 -- BASECALLING ONLY (GPU, run on gemini)
