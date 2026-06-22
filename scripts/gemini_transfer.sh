@@ -8,4 +8,4 @@
 #SBATCH --time=48:00:00
 #SBATCH --output=transfer_%A_%a.log
 
-scp -r /home/abportillo/github_repo/long-read/data/ gemini-data1:/scratch/abportillo/long-read/data
+scp -r /home/abportillo/github_repo/kzfp_long_read/data/pod5/ gemini-data1:/scratch/abportillo/long-read/data
