@@ -31,7 +31,7 @@ BASE=/scratch/abportillo/long-read
 POD5_DIR=$BASE/data/pod5                           
 MODEL="/scratch/abportillo/long-read/models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0"
 ls "$MODEL/config.toml" || echo "Model config not found at $MODEL/config.toml"
-OUTDIR=$BASE/results/pilot_kzfp
+OUTDIR=$BASE/results/kzfp_basecall
 mkdir -p "$OUTDIR"
 
 # --- Pre-flight checks (fail fast with clear messages) ---
@@ -57,8 +57,7 @@ echo "[$(date)] Basecalling on $(hostname)..."
 dorado basecaller \
     -x cuda:all \
     --recursive \
-    --kit-name SQK-PCB114-24 \
-    --min-qscore 3 \
+    --min-qscore 9 \
     "$MODEL" \
     "$POD5_DIR" \
   > "$OUTDIR/calls.bam"
