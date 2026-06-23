@@ -29,6 +29,15 @@
 #   3. Panel on-target (-q 1)      -> if it barely drops vs no filter, signal is real;
 #                                     if it collapses, much of it was repeat mis-mapping
 #
+# MEMORY NOTE (genome step): the hg38_p14 index is ~10-11G resident before any
+# read is aligned. KZFP paralogs are highly repetitive (mid_occ in the thousands),
+# which inflates minimap2 chaining buffers, and the default 500M-base minibatch
+# is held across all threads. A previous run OOM-killed at 48G. Fixes applied to
+# the genome alignment ONLY: -K 100M caps the minibatch, --secondary=no drops the
+# paralog secondary flood (we count primary-only anyway), and the piped sort is
+# capped (-@ 8 -m 1G) so it does not peak against minimap2 in the same cgroup.
+# Peak should now land ~25-30G; 48G is comfortable.
+#
 # Needs samtools + minimap2 + gawk (present in mamba_abner_BC).
 # =============================================================================
 
@@ -88,6 +97,7 @@ echo "[$(date)] Pooled reads: $total_reads"
 # 2. ALIGNMENT A -- panel master-transcript reference (Goal 1: signal)
 #    map-ont (panel seqs are exon-concatenated; no genomic introns).
 #    --secondary=no so each read is counted once, by best-matching gene.
+#    (Panel ref is tiny ~753 kb; no memory concern here, full threads on sort.)
 # ---------------------------------------------------------------------------
 echo "[$(date)] Aligning to panel master-transcripts..."
 minimap2 -t "$THREADS" -ax map-ont --secondary=no "$PANEL_FASTA" "$OUTDIR/pooled.fastq" \
@@ -117,6 +127,12 @@ genes_ge20=$(awk -F'\t' 'NR>1 && $3>=20' "$OUTDIR/per_gene_read_counts.tsv" | wc
 # 3. ALIGNMENT B -- genome, splice-aware (Goal 2: isoforms in IGV)
 #    -ub (both strands); reads here are NOT pychopper-oriented, so both-strand
 #    is correct. Optional junction guidance if paftools.js + k8 are available.
+#
+#    MEMORY-HARDENED (see header note): -K 100M caps the minibatch held across
+#    threads; --secondary=no drops the paralog secondary flood (genome counting
+#    below uses -F 0x904 which already excludes secondaries, and IGV isoform
+#    inspection does not need them); sort is capped at -@ 8 -m 1G (~8G) so it
+#    does not peak simultaneously with minimap2 inside the 48G cgroup.
 # ---------------------------------------------------------------------------
 JUNCBED="$OUTDIR/gencode.junctions.bed"
 if command -v paftools.js >/dev/null 2>&1 && command -v k8 >/dev/null 2>&1; then
@@ -127,9 +143,9 @@ else
 fi
 
 echo "[$(date)] Aligning to genome (splice)..."
-minimap2 -t "$THREADS" -ax splice -k14 -ub ${JUNCBED:+--junc-bed "$JUNCBED"} \
+minimap2 -t "$THREADS" -ax splice -k14 -ub -K 100M --secondary=no ${JUNCBED:+--junc-bed "$JUNCBED"} \
     "$GENOME" "$OUTDIR/pooled.fastq" \
-  | samtools sort -@ "$THREADS" -o "$OUTDIR/genome.sorted.bam" -
+  | samtools sort -@ 8 -m 1G -o "$OUTDIR/genome.sorted.bam" -
 samtools index "$OUTDIR/genome.sorted.bam"
 
 # ---------------------------------------------------------------------------
@@ -210,9 +226,10 @@ echo "  If loading the FASTA itself as reference, run: samtools faidx $GENOME"
 #   cat "$OUTDIR/pychopper_stats.txt"
 #
 #   # 2. Re-align oriented reads (-uf: forward-stranded after pychopper).
-#   minimap2 -t "$THREADS" -ax splice -k14 -uf ${JUNCBED:+--junc-bed "$JUNCBED"} \
+#   #    Same memory hardening as the genome step above (-K 100M, capped sort).
+#   minimap2 -t "$THREADS" -ax splice -k14 -uf -K 100M --secondary=no ${JUNCBED:+--junc-bed "$JUNCBED"} \
 #       "$GENOME" "$OUTDIR/full_length.fastq" \
-#     | samtools sort -@ "$THREADS" -o "$OUTDIR/fl.sorted.bam" -
+#     | samtools sort -@ 8 -m 1G -o "$OUTDIR/fl.sorted.bam" -
 #   samtools index "$OUTDIR/fl.sorted.bam"
 #
 #   # 3. Isoform calling. Only meaningful on genes that cleared a real coverage
