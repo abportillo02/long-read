@@ -48,10 +48,10 @@ THREADS=${SLURM_CPUS_PER_TASK:-16}
 #   ls -d /home/abportillo/github_repo/*long*read*/
 #   ls "$GENOME" "$PANEL_FASTA" "$GENE_LIST" "$GTF" "$CALLS_BAM"
 OG_Path=/home/abportillo/github_repo/kzfp_long_read
-GENOME=/home/abportillo/github_repo/long_read/docs/hg38_p14.fa
-GTF=/home/abportillo/github_repo/long_read/docs/gencode.v43.annotation.gtf
-PANEL_FASTA=/home/abportillo/github_repo/long_read/docs/primate_kzfp_ordered.fasta   # master-transcript panel, 117 genes, exon-concatenated
-GENE_LIST=/home/abportillo/github_repo/long_read/docs/priority_kzfps_ordered.txt
+GENOME=/home/abportillo/github_repo/long-read/docs/hg38_p14.fa
+GTF=/home/abportillo/github_repo/long-read/docs/gencode.v43.annotation.gtf
+PANEL_FASTA=/home/abportillo/github_repo/long-read/docs/primate_kzfp_ordered.fasta   # master-transcript panel, 117 genes, exon-concatenated
+GENE_LIST=/home/abportillo/github_repo/long-read/docs/priority_kzfps_ordered.txt
 OUTDIR=$OG_Path/results/kzfp_signal
 CALLS_BAM=$OG_Path/calls.bam
 
