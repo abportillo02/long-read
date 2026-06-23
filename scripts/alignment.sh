@@ -66,8 +66,14 @@ fi
 for f in "$GENOME" "$PANEL_FASTA" "$GENE_LIST" "$GTF"; do
     [[ -s "$f" ]] || { echo "ERROR: missing or empty reference: $f" >&2; exit 1; }
 done
-# Sanity check the input BAM isn't truncated from transfer
-samtools quickcheck "$CALLS_BAM" || { echo "ERROR: $CALLS_BAM failed quickcheck (truncated?)." >&2; exit 1; }
+# Input is an unaligned Dorado uBAM (no @SQ targets), which quickcheck fails by
+# design. Capture its output (avoid a pipe so pipefail doesn't trip on quickcheck's
+# nonzero exit) and verify the EOF block directly -- still catches transfer truncation.
+qc_out=$(samtools quickcheck -vvv "$CALLS_BAM" 2>&1)
+if ! grep -q "good EOF block" <<< "$qc_out"; then
+    echo "ERROR: $CALLS_BAM missing EOF block (truncated?)." >&2
+    exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # 1. BAM -> pooled fastq
