@@ -6,7 +6,7 @@
 #SBATCH -N 1-1                        # Min - Max Nodes
 #SBATCH -p all                        # default queue is all if you don't specify
 #SBATCH --mem=64G                      # Amount of memory in GB
-#SBATCH --time=250:00:00               # Time limit hrs:min:sec
+#SBATCH --time=24:00:00               # Time limit hrs:min:sec
 #SBATCH --output=dorado_align%j.log   # Standard output and error log
 
 module load Dorado/0.5.2

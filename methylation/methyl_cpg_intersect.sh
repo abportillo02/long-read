@@ -1,0 +1,2 @@
+#!/bin/bash
+bedtools intersect -a /net/nfs-irwrsrchnas01/labs/yunroseli_grp/mchosco/Abner/methylation_test/output/basic_mod_sample_PAQ01477.bedMethyl -b /net/nfs-irwrsrchnas01/labs/yunroseli_grp/mchosco/Abner/methylation_test/output/cpgIslands-GRCh38.sorted.bed.gz -u > /net/nfs-irwrsrchnas01/labs/yunroseli_grp/mchosco/Abner/methylation_test/output/cpg_mod_sample2.bedMethyl

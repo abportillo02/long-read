@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=bwameth_mapping
-#SBATCH --array=0-9
+#SBATCH --array=0,6,7,8
+#SBATCH --partition=all
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=64G
-#SBATCH --time=48:00:00
+#SBATCH --time=5-00:00:00
 #SBATCH --output=logs/MAP_%A_%a.out
 #SBATCH --error=logs/MAP_%A_%a.err
 #SBATCH --mail-type=END,FAIL
@@ -41,11 +42,11 @@ python -c "import toolshed; print('toolshed ok')"
 module list 2>&1
 pip freeze > $OUT/${L}_pip_freeze.txt
 
-python $BWAMETH --reference $REFDIR/${R}_ref.withcontrols.fa -t $SLURM_CPUS_PER_TASK \
-    --read-group "@RG\tID:${L}\tSM:${L}\tPL:ILLUMINA" $R1 $R2 \
-  | samtools fixmate -m -@ 4 - - \
-  | samtools sort -@ 4 -T $OUT/${L}.tmp - \
-  | samtools markdup -@ 4 - $OUT/${L}.markdup.bam
+   python $BWAMETH --reference $REFDIR/${R}_ref.withcontrols.fa -t 12 \
+--read-group "@RG\tID:${L}\tSM:${L}\tPL:ILLUMINA" $R1 $R2 \
+| samtools fixmate -m -@ 2 - - \
+| samtools sort -@ 3 -m 3G -T $OUT/${L}.tmp - \
+| samtools markdup -@ 2 - $OUT/${L}.markdup.bam
 
 samtools index $OUT/${L}.markdup.bam
 samtools flagstat $OUT/${L}.markdup.bam > $OUT/${L}.flagstat.txt
